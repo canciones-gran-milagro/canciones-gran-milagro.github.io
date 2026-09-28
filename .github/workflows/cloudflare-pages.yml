@@ -1,0 +1,30 @@
+name: Publicar espejo en Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: canciones-cloudflare
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preparar el mismo sitio estático
+        run: rsync -a --exclude='.git/' --exclude='.github/' ./ /tmp/canciones-pages/
+      - name: Publicar en Cloudflare Pages
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx --yes wrangler@4.92.0 pages deploy /tmp/canciones-pages --project-name=canciones-gran-milagro --branch=main --commit-dirty=true
